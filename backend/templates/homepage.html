@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #question-number {
+            text-align: right;
+        }
+
+        .question {
+            margin-bottom: 20px;
+        }
+
+        .options label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" id="cont">
+        <h1>Survey</h1>
+        <div id="question-number">Question 1 of 5</div>
+        <div class="question">
+            <h2 id="ques">Question 1: What is your favorite color?</h2>
+            <div class="options">
+            </div>
+        </div>
+        <button id="next-btn">Next</button>
+        <button id="submit-btn" style="display:none;">Submit</button>
+    </div>
+
+    <script>
+        const contain=document.getElementById('cont');
+        quesid = 0;
+        function getquestion() {
+            fetch('/getques1').then(function (response) {
+                if (response.status == 200)
+                    return response.json();
+                throw new Error('error')
+            }).then(function (data) {
+                console.log('Success!', data);
+                addtodom(data)
+            }).catch((error) => {
+                console.log('Something went wrong');
+            })
+        }
+        function addtodom(data) {
+            quesid = data.question_id;
+            const questionTitle = document.getElementById('ques');
+            const optionsContainer = document.querySelector('.options');
+            questionTitle.textContent = data.question;
+            optionsContainer.innerHTML = '';
+            data.options.forEach(option => {
+                const label = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'question1';
+                input.value = option.optid;
+                label.appendChild(input);
+                label.appendChild(document.createTextNode(option.opt));
+                optionsContainer.appendChild(label);
+            });
+        }
+        getquestion();
+        const nextButton = document.getElementById('next-btn');
+        const submitButton = document.getElementById('submit-btn');
+        const questionNumber = document.getElementById('question-number');
+
+        let currentQuestion = 1;
+        let selectedOption = 1;
+        nextButton.addEventListener('click', function () {
+            const selectedRadio = document.querySelector('input[name="question1"]:checked');
+            if (selectedRadio) {
+                selectedOption = selectedRadio.value;
+                sendResponse(currentQuestion, quesid, selectedOption);
+                currentQuestion++;
+                showQuestion(currentQuestion);
+                if (currentQuestion == 5) {
+                    nextButton.style.display = 'none';
+                    submitButton.style.display = 'block';
+                }
+            } else {
+                alert('Please select an option.');
+            }
+        });
+        function sendResponse(questionNum, id, selectedOption) {
+            console.log(questionNum);
+            const data = {
+                question_id: id,
+                selected_option_id: selectedOption
+            };
+
+            fetch('/nextques', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(function (response) {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('something went wrong');
+                }
+            }).then((data) => {
+                console.log(data);
+                addtodom(data);
+            })
+                .catch(function (error) {
+                    console.error('Error:', error);
+                });
+        }
+        function showQuestion(questionNum) {
+            questionNumber.textContent = `Question ${questionNum} of 5`;
+        }
+        submitButton.addEventListener('click',(e)=>{
+            contain.innerHTML='';
+            const h1=document.createElement('h1');
+            const h2=document.createElement('h2');
+            h2.style.textAlign='center'
+            h1.innerHTML="Thankyou"
+            h2.innerHTML="Your Survey is completed"
+            contain.appendChild(h1)
+            contain.appendChild(h2)
+        })
+    </script>
+
+</body>
+
+</html>
